@@ -1,0 +1,227 @@
+@import 'tailwindcss';
+
+@plugin 'tailwindcss-animate';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+    --font-sans:
+        'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+
+    --color-sidebar: var(--sidebar-background);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentColor);
+    }
+}
+
+:root {
+    --background: #f5f6ef;
+    --foreground: #112018;
+    --card: hsl(0, 0%, 100%);
+    --card-foreground: #112018;
+    --popover: hsl(0, 0%, 100%);
+    --popover-foreground: #112018;
+    --primary: #14573e;
+    --primary-foreground: #f7faf5;
+    --secondary: #eff5e8;
+    --secondary-foreground: #173225;
+    --muted: #edf1e9;
+    --muted-foreground: #5f6d63;
+    --accent: #fff4df;
+    --accent-foreground: #533a17;
+    --destructive: hsl(0, 84.2%, 60.2%);
+    --destructive-foreground: hsl(0, 0%, 98%);
+    --border: #dde5d8;
+    --input: #d6e0d0;
+    --ring: #14573e;
+    --chart-1: #14573e;
+    --chart-2: #ee9f39;
+    --chart-3: #2b6c53;
+    --chart-4: #b8db95;
+    --chart-5: #7f5220;
+    --radius: 0.9rem;
+    --sidebar-background: #f9fbf7;
+    --sidebar-foreground: #294136;
+    --sidebar-primary: #14573e;
+    --sidebar-primary-foreground: #f8fcf7;
+    --sidebar-accent: #eef4e9;
+    --sidebar-accent-foreground: #173225;
+    --sidebar-border: #dde5d8;
+    --sidebar-ring: #14573e;
+}
+
+.dark {
+    --background: hsl(0, 0%, 3.9%);
+    --foreground: hsl(0, 0%, 98%);
+    --card: hsl(0, 0%, 3.9%);
+    --card-foreground: hsl(0, 0%, 98%);
+    --popover: hsl(0, 0%, 3.9%);
+    --popover-foreground: hsl(0, 0%, 98%);
+    --primary: hsl(0, 0%, 98%);
+    --primary-foreground: hsl(0, 0%, 9%);
+    --secondary: hsl(0, 0%, 14.9%);
+    --secondary-foreground: hsl(0, 0%, 98%);
+    --muted: hsl(0, 0%, 6.9%);
+    --muted-foreground: hsl(0, 0%, 63.9%);
+    --accent: hsl(0, 0%, 14.9%);
+    --accent-foreground: hsl(0, 0%, 98%);
+    --destructive: hsl(0, 84%, 60%);
+    --destructive-foreground: hsl(0, 0%, 98%);
+    --border: hsl(0, 0%, 14.9%);
+    --input: hsl(0, 0%, 14.9%);
+    --ring: hsl(0, 0%, 83.1%);
+    --chart-1: hsl(220, 70%, 50%);
+    --chart-2: hsl(160, 60%, 45%);
+    --chart-3: hsl(30, 80%, 55%);
+    --chart-4: hsl(280, 65%, 60%);
+    --chart-5: hsl(340, 75%, 55%);
+    --sidebar-background: hsl(0, 0%, 7%);
+    --sidebar-foreground: hsl(0, 0%, 80%);
+    --sidebar-primary: hsl(360, 100%, 100%);
+    --sidebar-primary-foreground: hsl(0, 0%, 100%);
+    --sidebar-accent: hsl(0, 0%, 15.9%);
+    --sidebar-accent-foreground: hsl(240, 4.8%, 95.9%);
+    --sidebar-border: hsl(0, 0%, 15.9%);
+    --sidebar-ring: hsl(217.2, 91.2%, 59.8%);
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+        background-image: linear-gradient(180deg, #fafbf7 0%, #f3f5ef 100%);
+    }
+}
+
+@layer components {
+    .guide-prose {
+        color: #334155;
+        line-height: 1.85;
+    }
+
+    .guide-prose h1,
+    .guide-prose h2,
+    .guide-prose h3,
+    .guide-prose h4 {
+        color: #0f172a;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-top: 1.5rem;
+        margin-bottom: 0.9rem;
+    }
+
+    .guide-prose h1 {
+        font-size: 2.25rem;
+    }
+
+    .guide-prose h2 {
+        font-size: 1.75rem;
+    }
+
+    .guide-prose h3 {
+        font-size: 1.35rem;
+    }
+
+    .guide-prose p,
+    .guide-prose ul,
+    .guide-prose ol,
+    .guide-prose blockquote {
+        margin-bottom: 1rem;
+    }
+
+    .guide-prose ul,
+    .guide-prose ol {
+        padding-left: 1.5rem;
+    }
+
+    .guide-prose blockquote {
+        border-left: 4px solid #86efac;
+        background: #f8fafc;
+        padding: 0.9rem 1rem;
+        color: #475569;
+    }
+
+    .guide-prose a {
+        color: #166534;
+        text-decoration: underline;
+    }
+
+    .guide-prose hr {
+        border: 0;
+        border-top: 1px solid #cbd5e1;
+        margin: 1.5rem 0;
+    }
+
+    .guide-prose img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 1rem;
+        margin: 1.25rem 0;
+    }
+}
