@@ -23,12 +23,12 @@ class AppServiceProvider extends ServiceProvider
     {
         app(SiteMailSettingsService::class)->applyRuntimeConfig();
 
-        if (config('app.url')) {
+        if ($this->app->runningInConsole() && config('app.url')) {
             URL::forceRootUrl(config('app.url'));
+        }
 
-            if (parse_url(config('app.url'), PHP_URL_SCHEME) === 'https') {
-                URL::forceScheme('https');
-            }
+        if (parse_url(config('app.url'), PHP_URL_SCHEME) === 'https') {
+            URL::forceScheme('https');
         }
     }
 }
