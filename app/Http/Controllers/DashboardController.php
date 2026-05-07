@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AnalyticsEvent;
+use App\Models\AiWriterAccount;
 use App\Models\GuideCategory;
 use App\Models\GuidePost;
 use App\Models\GuidePostComment;
@@ -88,6 +89,7 @@ class DashboardController extends Controller
             $this->adsenseStatus($settings),
             $this->mailStatus($settings),
             $this->captchaStatus($settings),
+            $this->aiWriterStatus(),
         ];
     }
 
@@ -199,6 +201,34 @@ class DashboardController extends Controller
                 ['label' => 'Captcha enabled', 'ok' => $enabled],
                 ['label' => 'Keys saved', 'ok' => $hasKeys],
                 ['label' => 'Forms selected', 'ok' => $protectsForms],
+            ],
+        ];
+    }
+
+    private function aiWriterStatus(): array
+    {
+        $activeAccounts = AiWriterAccount::query()->where('is_active', true)->count();
+        $totalAccounts = AiWriterAccount::query()->count();
+        $ready = $activeAccounts > 0;
+
+        return [
+            'id' => 'ai-writer',
+            'title' => 'AI Writer',
+            'status' => $ready ? 'Ready' : 'No accounts',
+            'state' => $ready ? 'active' : 'inactive',
+            'description' => $ready
+                ? 'The post editor can generate article drafts using saved OpenAI accounts.'
+                : 'Add an OpenAI API account before using ChatGPT drafting in Add Post.',
+            'href' => route('admin.settings.ai-writer', absolute: false),
+            'facts' => [
+                $activeAccounts.' active accounts',
+                $totalAccounts.' total saved',
+                'Available in Create and Edit Post',
+            ],
+            'checks' => [
+                ['label' => 'Account saved', 'ok' => $totalAccounts > 0],
+                ['label' => 'Account active', 'ok' => $activeAccounts > 0],
+                ['label' => 'Post editor connected', 'ok' => true],
             ],
         ];
     }

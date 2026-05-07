@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AdminAiWriterController;
 use App\Http\Controllers\AdminBackupController;
 use App\Http\Controllers\AdminChatController;
 use App\Http\Controllers\AdminGuideController;
@@ -50,6 +51,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/admin/posts/{post}', [AdminGuideController::class, 'update'])->name('admin.posts.update');
     Route::delete('/admin/posts/{post}', [AdminGuideController::class, 'destroy'])->name('admin.posts.destroy');
     Route::post('/admin/posts/editor-image', [AdminGuideController::class, 'uploadEditorImage'])->name('admin.posts.editor-image');
+    Route::post('/admin/posts/ai/generate', [AdminAiWriterController::class, 'generatePost'])->name('admin.posts.ai.generate');
     Route::get('/admin/pages', [AdminPageController::class, 'index'])->name('admin.pages.index');
     Route::get('/admin/pages/create', [AdminPageController::class, 'create'])->name('admin.pages.create');
     Route::post('/admin/pages', [AdminPageController::class, 'store'])->name('admin.pages.store');
@@ -110,6 +112,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/admin/settings/footer', [AdminSettingController::class, 'updateFooter'])->name('admin.settings.footer.update');
     Route::get('/admin/settings/captcha', [AdminSettingController::class, 'captcha'])->name('admin.settings.captcha');
     Route::post('/admin/settings/captcha', [AdminSettingController::class, 'updateCaptcha'])->name('admin.settings.captcha.update');
+    Route::get('/admin/settings/ai-writer', [AdminAiWriterController::class, 'index'])->name('admin.settings.ai-writer');
+    Route::post('/admin/settings/ai-writer/accounts', [AdminAiWriterController::class, 'store'])->name('admin.settings.ai-writer.accounts.store');
+    Route::put('/admin/settings/ai-writer/accounts/{account}', [AdminAiWriterController::class, 'update'])->name('admin.settings.ai-writer.accounts.update');
+    Route::post('/admin/settings/ai-writer/accounts/{account}/test', [AdminAiWriterController::class, 'test'])->name('admin.settings.ai-writer.accounts.test');
+    Route::delete('/admin/settings/ai-writer/accounts/{account}', [AdminAiWriterController::class, 'destroy'])->name('admin.settings.ai-writer.accounts.destroy');
     Route::get('/admin/settings/deleted-content', [AdminSettingController::class, 'deletedContent'])->name('admin.settings.deleted-content');
     Route::get('/admin/settings/backups', [AdminBackupController::class, 'index'])->name('admin.settings.backups');
     Route::post('/admin/settings/backups', [AdminBackupController::class, 'store'])->name('admin.settings.backups.store');

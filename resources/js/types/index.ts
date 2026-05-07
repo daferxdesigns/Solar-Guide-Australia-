@@ -39,6 +39,7 @@ export interface SharedData {
         error?: string | null;
         calculator_success?: string | null;
         contact_success?: string | null;
+        subscribe_success?: string | null;
     };
     siteSettings?: {
         site_title?: string;

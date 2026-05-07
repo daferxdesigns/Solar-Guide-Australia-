@@ -1,5 +1,6 @@
+import { trackClickEvent } from '@/lib/analytics';
 import { Link, router, usePage } from '@inertiajs/react';
-import { ChevronDown, Menu, Edit, Plus, BarChart3, User, LogOut, Settings } from 'lucide-react';
+import { BarChart3, ChevronDown, Edit, LogOut, Menu, Plus, Settings, User } from 'lucide-react';
 
 interface Category {
     id: number;
@@ -31,56 +32,28 @@ export function PublicSiteHeader(props: any) {
 
     return (
         <>
-            {auth?.user && (
-                <AdminBar
-                    user={auth.user}
-                    pageTitle={pageTitle}
-                    postId={postId}
-                />
-            )}
+            {auth?.user && <AdminBar user={auth.user} pageTitle={pageTitle} postId={postId} />}
             <div className="relative z-50">
                 <div className="mx-auto max-w-7xl px-6 lg:px-10">
                     <div className="flex items-center justify-between gap-4 py-2">
                         <a href="/" className="min-w-0 cursor-pointer">
-                            <div className="text-[11px] font-semibold tracking-[0.28em] text-[#b8db95] uppercase">
-                                Solar Support Australia
-                            </div>
+                            <div className="text-[11px] font-semibold tracking-[0.28em] text-[#b8db95] uppercase">Solar Support Australia</div>
                         </a>
 
                         <div className="hidden items-center gap-2 lg:flex">
                             {menus && menus.length > 0 ? (
                                 menus.map((menu: any) => {
                                     if (menu.children.length > 0) {
-                                        return (
-                                            <MenuDropdown
-                                                key={menu.id}
-                                                menu={menu}
-                                                activeCategorySlug={activeCategorySlug}
-                                            />
-                                        );
+                                        return <MenuDropdown key={menu.id} menu={menu} activeCategorySlug={activeCategorySlug} />;
                                     } else {
-                                        return (
-                                            <NavLink
-                                                key={menu.id}
-                                                href={menu.url}
-                                                label={menu.label}
-                                            />
-                                        );
+                                        return <NavLink key={menu.id} href={menu.url} label={menu.label} />;
                                     }
                                 })
                             ) : (
                                 <>
                                     <NavLink href="/guides" label="Home" />
-                                    <CategoryMenu
-                                        title="Guides"
-                                        categories={guideCategories}
-                                        activeCategorySlug={activeCategorySlug}
-                                    />
-                                    <CategoryMenu
-                                        title="Blog"
-                                        categories={blogCategories}
-                                        activeCategorySlug={activeCategorySlug}
-                                    />
+                                    <CategoryMenu title="Guides" categories={guideCategories} activeCategorySlug={activeCategorySlug} />
+                                    <CategoryMenu title="Blog" categories={blogCategories} activeCategorySlug={activeCategorySlug} />
                                     <NavLink href="/guides#contact" label="Contact us" />
                                 </>
                             )}
@@ -95,18 +68,11 @@ export function PublicSiteHeader(props: any) {
                                     <div className="space-y-2">
                                         {menus.map((menu: any) => (
                                             <div key={menu.id}>
-                                                <MobileNavLink
-                                                    href={menu.url}
-                                                    label={menu.label}
-                                                />
+                                                <MobileNavLink href={menu.url} label={menu.label} />
                                                 {menu.children.length > 0 && (
                                                     <div className="mt-2 space-y-2 pl-4">
                                                         {menu.children.map((child: any) => (
-                                                            <MobileNavLink
-                                                                key={child.id}
-                                                                href={child.url}
-                                                                label={child.label}
-                                                            />
+                                                            <MobileNavLink key={child.id} href={child.url} label={child.label} />
                                                         ))}
                                                     </div>
                                                 )}
@@ -132,7 +98,9 @@ export function PublicSiteHeader(props: any) {
                                             </div>
                                         </div>
                                         <div className="mt-4 border-t border-white/10 pt-4">
-                                            <div className="mb-3 text-[11px] font-semibold tracking-[0.22em] text-[#b8db95] uppercase">Blog Categories</div>
+                                            <div className="mb-3 text-[11px] font-semibold tracking-[0.22em] text-[#b8db95] uppercase">
+                                                Blog Categories
+                                            </div>
                                             <div className="space-y-2">
                                                 {blogCategories.map((category: any) => (
                                                     <MobileNavLink
@@ -201,12 +169,12 @@ function AdminBar({ user, pageTitle, postId }: { user: any; pageTitle: string; p
 function UserMenu({ user, pageTitle }: { user: any; pageTitle: string }) {
     return (
         <details className="group relative">
-            <summary className="flex list-none cursor-pointer items-center gap-2 rounded px-2 py-1 text-white/80 transition hover:bg-white/10 hover:text-white">
+            <summary className="flex cursor-pointer list-none items-center gap-2 rounded px-2 py-1 text-white/80 transition hover:bg-white/10 hover:text-white">
                 <User className="h-4 w-4" />
                 <span className="text-sm">{user.name}</span>
                 <ChevronDown className="h-3 w-3 transition group-open:rotate-180" />
             </summary>
-            <div className="absolute right-0 top-full z-[100] mt-2 w-48 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
+            <div className="absolute top-full right-0 z-[100] mt-2 w-48 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
                 <Link
                     href="/settings/profile"
                     className="flex items-center gap-2 rounded px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
@@ -214,10 +182,7 @@ function UserMenu({ user, pageTitle }: { user: any; pageTitle: string }) {
                     <User className="h-4 w-4" />
                     Profile
                 </Link>
-                <Link
-                    href="/settings"
-                    className="flex items-center gap-2 rounded px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
-                >
+                <Link href="/settings" className="flex items-center gap-2 rounded px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50">
                     <Settings className="h-4 w-4" />
                     Settings
                 </Link>
@@ -236,7 +201,10 @@ function UserMenu({ user, pageTitle }: { user: any; pageTitle: string }) {
 
 function NavLink({ href, label }: { href: string; label: string }) {
     return (
-        <Link href={href} className="cursor-pointer rounded-full px-4 py-2 text-sm font-semibold text-white/88 transition hover:bg-white/10 hover:text-white">
+        <Link
+            href={href}
+            className="cursor-pointer rounded-full px-4 py-2 text-sm font-semibold text-white/88 transition hover:bg-white/10 hover:text-white"
+        >
             {label}
         </Link>
     );
@@ -244,7 +212,10 @@ function NavLink({ href, label }: { href: string; label: string }) {
 
 function MobileNavLink({ href, label }: { href: string; label: string }) {
     return (
-        <Link href={href} className="block cursor-pointer rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-sm font-semibold text-white/90 transition hover:bg-white/10">
+        <Link
+            href={href}
+            className="block cursor-pointer rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-sm font-semibold text-white/90 transition hover:bg-white/10"
+        >
             {label}
         </Link>
     );
@@ -257,13 +228,13 @@ function CategoryMenu({ title, categories, activeCategorySlug }: { title: string
                 <span>{title}</span>
                 <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
             </summary>
-            <div className="absolute left-0 top-full z-[90] mt-3 w-72 rounded-[1.25rem] border border-white/10 bg-[#103426]/98 p-2 shadow-2xl backdrop-blur-xl">
+            <div className="absolute top-full left-0 z-[90] mt-3 w-72 rounded-[1.25rem] border border-white/10 bg-[#103426]/98 p-2 shadow-2xl backdrop-blur-xl">
                 <div className="space-y-1">
                     {categories.map((category: any) => (
                         <Link
                             key={category.id}
                             href={`/guides/category/${category.slug}`}
-                            className={`cursor-pointer flex items-center justify-between rounded-[1.25rem] px-4 py-3 text-sm transition ${
+                            className={`flex cursor-pointer items-center justify-between rounded-[1.25rem] px-4 py-3 text-sm transition ${
                                 activeCategorySlug === category.slug
                                     ? 'bg-[#f0a23b] text-[#17331f]'
                                     : 'text-white/88 hover:bg-white/10 hover:text-white'
@@ -281,17 +252,17 @@ function CategoryMenu({ title, categories, activeCategorySlug }: { title: string
 function MenuDropdown({ menu, activeCategorySlug }: { menu: MenuItem; activeCategorySlug?: string | null }) {
     return (
         <details className="group relative z-[70]">
-            <summary className="flex list-none cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white/88 transition hover:bg-white/10 hover:text-white">
+            <summary className="flex cursor-pointer list-none items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white/88 transition hover:bg-white/10 hover:text-white">
                 <span>{menu.label}</span>
                 <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
             </summary>
-            <div className="absolute left-0 top-full z-[90] mt-3 w-72 rounded-[1.25rem] border border-white/10 bg-[#103426]/98 p-2 shadow-2xl backdrop-blur-xl">
+            <div className="absolute top-full left-0 z-[90] mt-3 w-72 rounded-[1.25rem] border border-white/10 bg-[#103426]/98 p-2 shadow-2xl backdrop-blur-xl">
                 <div className="space-y-1">
                     {menu.children.map((child: any) => (
                         <Link
                             key={child.id}
                             href={child.url}
-                            className={`cursor-pointer flex items-center justify-between rounded-[1.25rem] px-4 py-3 text-sm transition ${
+                            className={`flex cursor-pointer items-center justify-between rounded-[1.25rem] px-4 py-3 text-sm transition ${
                                 child.category && activeCategorySlug === child.category.slug
                                     ? 'bg-[#f0a23b] text-[#17331f]'
                                     : 'text-white/88 hover:bg-white/10 hover:text-white'

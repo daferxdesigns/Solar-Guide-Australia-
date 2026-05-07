@@ -2,7 +2,20 @@ import { NavMain } from '@/components/nav-main';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { FileStack, Inbox, LayoutGrid, LineChart, Menu, MessageCircle, MessageSquare, PencilLine, Settings, Tags, Users } from 'lucide-react';
+import {
+    BrainCircuit,
+    FileStack,
+    Inbox,
+    LayoutGrid,
+    LineChart,
+    Menu,
+    MessageCircle,
+    MessageSquare,
+    PencilLine,
+    Settings,
+    Tags,
+    Users,
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -72,6 +85,7 @@ const mainNavItems: NavItem[] = [
             { title: 'Menu Settings', url: '/admin/settings/menus' },
             { title: 'Footer Builder', url: '/admin/settings/footer' },
             { title: 'Captcha', url: '/admin/settings/captcha' },
+            { title: 'AI Writer', url: '/admin/settings/ai-writer', icon: BrainCircuit },
             { title: 'Deleted Content', url: '/admin/settings/deleted-content' },
             { title: 'Backups', url: '/admin/settings/backups' },
         ],

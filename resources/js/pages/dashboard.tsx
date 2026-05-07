@@ -1,7 +1,18 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { AlertTriangle, CheckCircle2, CircleOff, ExternalLink, Mail, Megaphone, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
+import {
+    AlertTriangle,
+    BrainCircuit,
+    CheckCircle2,
+    CircleOff,
+    ExternalLink,
+    Mail,
+    Megaphone,
+    ShieldCheck,
+    Sparkles,
+    type LucideIcon,
+} from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -39,6 +50,7 @@ const integrationIcons: Record<string, LucideIcon> = {
     adsense: Megaphone,
     mail: Mail,
     captcha: ShieldCheck,
+    'ai-writer': BrainCircuit,
 };
 
 const stateStyles: Record<

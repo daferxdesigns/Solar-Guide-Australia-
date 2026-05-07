@@ -2,12 +2,19 @@ import RichTextEditor from '@/components/rich-text-editor';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
+import { AlertTriangle, CheckCircle2, Sparkles, Wand2 } from 'lucide-react';
 import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
 
 interface CategoryOption {
     id: number;
     name: string;
     slug: string;
+}
+
+interface AiAccountOption {
+    id: number;
+    name: string;
+    model: string;
 }
 
 interface PostPayload {
@@ -49,26 +56,29 @@ interface Props {
     submitLabel: string;
     breadcrumbs: BreadcrumbItem[];
     categories: CategoryOption[];
+    aiAccounts: AiAccountOption[];
     post: PostPayload;
     submitUrl: string;
     method: 'post' | 'put';
 }
+
+type AiDraft = {
+    title: string;
+    slug: string;
+    excerpt: string;
+    content: string;
+    seo_title: string;
+    seo_description: string;
+    seo_keywords: string;
+    featured_image_alt: string;
+};
 
 type AnalyticsGroup = {
     label: string;
     items: Array<{ label: string; visits: number }>;
 };
 
-export default function PostForm({
-    pageTitle,
-    heroTitle,
-    submitLabel,
-    breadcrumbs,
-    categories,
-    post,
-    submitUrl,
-    method,
-}: Props) {
+export default function PostForm({ pageTitle, heroTitle, submitLabel, breadcrumbs, categories, aiAccounts, post, submitUrl, method }: Props) {
     const analyticsGroups: AnalyticsGroup[] = [
         { label: 'Devices', items: post.analytics.device_types },
         { label: 'Browsers', items: post.analytics.browsers },
@@ -104,9 +114,25 @@ export default function PostForm({
     const [featuredImagePreview, setFeaturedImagePreview] = useState<string | null>(post.featured_image_url);
     const [headerBackgroundPreview, setHeaderBackgroundPreview] = useState<string | null>(post.header_background_image_url);
     const [isUploadingInlineImage, setIsUploadingInlineImage] = useState(false);
+    const [aiForm, setAiForm] = useState({
+        ai_account_id: aiAccounts[0]?.id ? String(aiAccounts[0].id) : '',
+        topic: post.title ?? '',
+        keywords: post.seo_keywords ?? '',
+        audience: 'Australian homeowners, solar customers, installers, and support teams',
+        tone: 'Practical, clear, supportive',
+        length: 'detailed',
+        notes: '',
+    });
+    const [aiDraft, setAiDraft] = useState<AiDraft | null>(null);
+    const [aiError, setAiError] = useState<string | null>(null);
+    const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
 
     const readingMinutes = useMemo(() => {
-        const words = form.content.replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+        const words = form.content
+            .replace(/<[^>]+>/g, ' ')
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean).length;
         return Math.max(1, Math.ceil(words / 220));
     }, [form.content]);
 
@@ -163,6 +189,77 @@ export default function PostForm({
         );
     };
 
+    const handleAiChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        const { name, value } = event.target;
+
+        setAiForm((current) => ({ ...current, [name]: value }));
+    };
+
+    const generateDraft = async () => {
+        if (!aiForm.ai_account_id || !aiForm.topic.trim()) {
+            setAiError('Choose an AI account and enter a topic first.');
+            return;
+        }
+
+        setIsGeneratingDraft(true);
+        setAiError(null);
+        setAiDraft(null);
+
+        const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+
+        try {
+            const response = await fetch('/admin/posts/ai/generate', {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({
+                    ...aiForm,
+                    ai_account_id: Number(aiForm.ai_account_id),
+                    category_id: form.guide_category_id !== '' ? Number(form.guide_category_id) : null,
+                    current_title: form.title,
+                    current_excerpt: form.excerpt,
+                }),
+            });
+
+            const payload = await response.json();
+
+            if (!response.ok) {
+                throw new Error(payload.message || 'AI generation failed.');
+            }
+
+            setAiDraft(payload.draft);
+        } catch (error) {
+            setAiError(error instanceof Error ? error.message : 'AI generation failed.');
+        } finally {
+            setIsGeneratingDraft(false);
+        }
+    };
+
+    const applyDraft = (mode: 'all' | 'seo') => {
+        if (!aiDraft) {
+            return;
+        }
+
+        setForm((current) => ({
+            ...current,
+            ...(mode === 'all'
+                ? {
+                      title: aiDraft.title || current.title,
+                      slug: aiDraft.slug || current.slug,
+                      excerpt: aiDraft.excerpt || current.excerpt,
+                      content: aiDraft.content || current.content,
+                      featured_image_alt: aiDraft.featured_image_alt || current.featured_image_alt,
+                  }
+                : {}),
+            seo_title: aiDraft.seo_title || current.seo_title,
+            seo_description: aiDraft.seo_description || current.seo_description,
+            seo_keywords: aiDraft.seo_keywords || current.seo_keywords,
+        }));
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={pageTitle} />
@@ -190,6 +287,176 @@ export default function PostForm({
                     </div>
                 </div>
 
+                <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+                    <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_360px]">
+                        <div className="p-6">
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                <div>
+                                    <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                        <Sparkles className="h-3.5 w-3.5" />
+                                        AI drafting studio
+                                    </div>
+                                    <h2 className="mt-3 text-xl font-semibold text-slate-950">Draft this guide with ChatGPT</h2>
+                                    <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+                                        Pick one saved OpenAI account, describe the article, then review the generated draft before applying it to the
+                                        post fields.
+                                    </p>
+                                </div>
+                                <Link
+                                    href="/admin/settings/ai-writer"
+                                    className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                >
+                                    AI accounts
+                                </Link>
+                            </div>
+
+                            {aiAccounts.length === 0 ? (
+                                <div className="mt-5 rounded-2xl border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+                                    Add an OpenAI API account in AI Writer settings before generating drafts.
+                                </div>
+                            ) : (
+                                <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-slate-800">AI account</label>
+                                        <select
+                                            name="ai_account_id"
+                                            value={aiForm.ai_account_id}
+                                            onChange={handleAiChange}
+                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
+                                        >
+                                            {aiAccounts.map((account) => (
+                                                <option key={account.id} value={account.id}>
+                                                    {account.name} ({account.model})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-slate-800">Topic</label>
+                                        <input
+                                            name="topic"
+                                            value={aiForm.topic}
+                                            onChange={handleAiChange}
+                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
+                                            placeholder="Example: Sungrow inverter Wi-Fi setup guide"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-slate-800">Target keywords</label>
+                                        <input
+                                            name="keywords"
+                                            value={aiForm.keywords}
+                                            onChange={handleAiChange}
+                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
+                                            placeholder="solar inverter Wi-Fi, Sungrow setup, Australia"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-slate-800">Audience</label>
+                                        <input
+                                            name="audience"
+                                            value={aiForm.audience}
+                                            onChange={handleAiChange}
+                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-slate-800">Tone</label>
+                                        <input
+                                            name="tone"
+                                            value={aiForm.tone}
+                                            onChange={handleAiChange}
+                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-slate-800">Length</label>
+                                        <select
+                                            name="length"
+                                            value={aiForm.length}
+                                            onChange={handleAiChange}
+                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
+                                        >
+                                            <option value="short">Short</option>
+                                            <option value="standard">Standard</option>
+                                            <option value="detailed">Detailed</option>
+                                        </select>
+                                    </div>
+                                    <div className="lg:col-span-2">
+                                        <label className="mb-2 block text-sm font-semibold text-slate-800">Facts, product notes, or warnings</label>
+                                        <textarea
+                                            name="notes"
+                                            value={aiForm.notes}
+                                            onChange={handleAiChange}
+                                            rows={4}
+                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
+                                            placeholder="Add the inverter brand, app name, exact steps you already know, safety warnings, or offers to avoid."
+                                        />
+                                    </div>
+                                    <div className="lg:col-span-2">
+                                        <button
+                                            type="button"
+                                            onClick={generateDraft}
+                                            disabled={isGeneratingDraft}
+                                            className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+                                        >
+                                            <Wand2 className="h-4 w-4" />
+                                            {isGeneratingDraft ? 'Generating draft...' : 'Generate draft'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <aside className="border-t border-slate-200 bg-slate-50 p-6 xl:border-t-0 xl:border-l">
+                            {aiError && (
+                                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-900">
+                                    <div className="flex items-start gap-2">
+                                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                                        <span>{aiError}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {aiDraft ? (
+                                <div className="space-y-4">
+                                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                                        <div className="flex items-center gap-2 font-semibold">
+                                            <CheckCircle2 className="h-4 w-4" />
+                                            Draft ready
+                                        </div>
+                                        <div className="mt-2 leading-6">{aiDraft.title}</div>
+                                    </div>
+                                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                        <div className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">Excerpt</div>
+                                        <p className="mt-2 text-sm leading-6 text-slate-600">{aiDraft.excerpt}</p>
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => applyDraft('all')}
+                                            className="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                                        >
+                                            Apply full draft
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => applyDraft('seo')}
+                                            className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                        >
+                                            Apply SEO only
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-sm leading-6 text-slate-500">
+                                    Generated drafts will appear here first, so the editor only changes when you apply them.
+                                </div>
+                            )}
+                        </aside>
+                    </div>
+                </section>
+
                 <form onSubmit={handleSubmit} className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
                     <div className="space-y-6">
                         <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
@@ -201,7 +468,7 @@ export default function PostForm({
                                         name="title"
                                         value={form.title}
                                         onChange={handleChange}
-                                        className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                                        className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
                                         placeholder="Example: Solar inverter communication faults explained"
                                         required
                                     />
@@ -214,7 +481,7 @@ export default function PostForm({
                                             name="slug"
                                             value={form.slug}
                                             onChange={handleChange}
-                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
                                             placeholder="Auto-generated if blank"
                                         />
                                     </div>
@@ -224,7 +491,7 @@ export default function PostForm({
                                             name="guide_category_id"
                                             value={form.guide_category_id}
                                             onChange={handleChange}
-                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
                                         >
                                             <option value="">No category</option>
                                             {categories.map((category) => (
@@ -242,7 +509,7 @@ export default function PostForm({
                                         value={form.excerpt}
                                         onChange={handleChange}
                                         rows={4}
-                                        className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                                        className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
                                         placeholder="Short summary used on the public guide homepage."
                                     />
                                 </div>
@@ -282,7 +549,7 @@ export default function PostForm({
                                         name="status"
                                         value={form.status}
                                         onChange={handleChange}
-                                        className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                                        className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
                                     >
                                         <option value="draft">Draft</option>
                                         <option value="published">Published</option>
@@ -295,7 +562,7 @@ export default function PostForm({
                                         name="published_at"
                                         value={form.published_at}
                                         onChange={handleChange}
-                                        className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                                        className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
                                     />
                                 </div>
                                 <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -313,10 +580,16 @@ export default function PostForm({
                                 </label>
                                 <div className="border-t border-slate-200 pt-4">
                                     <div className="flex flex-col gap-3">
-                                        <button type="submit" className="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700">
+                                        <button
+                                            type="submit"
+                                            className="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                                        >
                                             Save changes
                                         </button>
-                                        <Link href="/admin/posts" className="rounded-2xl border border-slate-300 px-4 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                                        <Link
+                                            href="/admin/posts"
+                                            className="rounded-2xl border border-slate-300 px-4 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                        >
                                             Back to posts
                                         </Link>
                                         {post.slug && post.status === 'published' && (
@@ -362,7 +635,7 @@ export default function PostForm({
                                     name="featured_image_alt"
                                     value={form.featured_image_alt}
                                     onChange={handleChange}
-                                    className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                                    className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
                                     placeholder="Image alt text"
                                 />
                                 {featuredImagePreview && (
@@ -393,7 +666,7 @@ export default function PostForm({
                                             name="header_background_mode"
                                             value={form.header_background_mode}
                                             onChange={handleChange}
-                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
                                         >
                                             <option value="color">Color</option>
                                             <option value="image">Image</option>
@@ -429,7 +702,9 @@ export default function PostForm({
                                     }
                                 >
                                     <div className="text-xs font-semibold tracking-[0.2em] text-white/75 uppercase">Live preview</div>
-                                    <div className="mt-3 max-w-2xl font-serif text-3xl leading-tight">Your header can now feel editorial, branded, and much more dynamic.</div>
+                                    <div className="mt-3 max-w-2xl font-serif text-3xl leading-tight">
+                                        Your header can now feel editorial, branded, and much more dynamic.
+                                    </div>
                                     <div className="mt-3 max-w-xl text-sm leading-6 text-white/75">
                                         Balance the hero color, image fit, alignment, and overlay to match the article tone before publishing.
                                     </div>
@@ -450,10 +725,22 @@ export default function PostForm({
                                             name="header_background_image_position"
                                             value={form.header_background_image_position}
                                             onChange={handleChange}
-                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
                                         >
-                                            {['left top', 'center top', 'right top', 'left center', 'center center', 'right center', 'left bottom', 'center bottom', 'right bottom'].map((value) => (
-                                                <option key={value} value={value}>{value}</option>
+                                            {[
+                                                'left top',
+                                                'center top',
+                                                'right top',
+                                                'left center',
+                                                'center center',
+                                                'right center',
+                                                'left bottom',
+                                                'center bottom',
+                                                'right bottom',
+                                            ].map((value) => (
+                                                <option key={value} value={value}>
+                                                    {value}
+                                                </option>
                                             ))}
                                         </select>
                                     </div>
@@ -463,7 +750,7 @@ export default function PostForm({
                                             name="header_background_image_size"
                                             value={form.header_background_image_size}
                                             onChange={handleChange}
-                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
                                         >
                                             <option value="cover">Cover</option>
                                             <option value="contain">Contain</option>
@@ -477,7 +764,7 @@ export default function PostForm({
                                             name="header_background_image_repeat"
                                             value={form.header_background_image_repeat}
                                             onChange={handleChange}
-                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                                            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
                                         >
                                             <option value="no-repeat">No repeat</option>
                                             <option value="repeat">Repeat</option>
@@ -488,7 +775,9 @@ export default function PostForm({
                                 </div>
 
                                 <div>
-                                    <label className="mb-2 block text-sm font-semibold text-slate-800">Overlay strength: {form.header_overlay_opacity}%</label>
+                                    <label className="mb-2 block text-sm font-semibold text-slate-800">
+                                        Overlay strength: {form.header_overlay_opacity}%
+                                    </label>
                                     <input
                                         type="range"
                                         name="header_overlay_opacity"
@@ -517,9 +806,7 @@ export default function PostForm({
 
                         <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
                             <h2 className="text-lg font-semibold text-slate-900">SEO</h2>
-                            <p className="mt-2 text-sm text-slate-500">
-                                Set search-friendly metadata similar to a WordPress SEO plugin.
-                            </p>
+                            <p className="mt-2 text-sm text-slate-500">Set search-friendly metadata similar to a WordPress SEO plugin.</p>
                             <div className="mt-4 space-y-4">
                                 <div>
                                     <label className="mb-2 block text-sm font-semibold text-slate-800">SEO title</label>
@@ -528,7 +815,7 @@ export default function PostForm({
                                         name="seo_title"
                                         value={form.seo_title}
                                         onChange={handleChange}
-                                        className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                                        className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
                                         placeholder="Optional custom title tag"
                                     />
                                 </div>
@@ -539,7 +826,7 @@ export default function PostForm({
                                         value={form.seo_description}
                                         onChange={handleChange}
                                         rows={4}
-                                        className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                                        className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
                                         placeholder="Optional custom description for search results"
                                     />
                                 </div>
@@ -550,7 +837,7 @@ export default function PostForm({
                                         value={form.seo_keywords}
                                         onChange={handleChange}
                                         rows={3}
-                                        className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                                        className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
                                         placeholder="Comma-separated keywords, for example: solar inverter, installation guide, fault finding"
                                     />
                                 </div>
@@ -561,7 +848,7 @@ export default function PostForm({
                                         name="canonical_url"
                                         value={form.canonical_url}
                                         onChange={handleChange}
-                                        className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                                        className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
                                         placeholder="https://solar-guide-site.test/guides/example-article"
                                     />
                                 </div>
@@ -587,7 +874,10 @@ export default function PostForm({
                                         {items.length > 0 ? (
                                             <div className="space-y-2">
                                                 {items.map((item) => (
-                                                    <div key={`${label}-${item.label}`} className="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm">
+                                                    <div
+                                                        key={`${label}-${item.label}`}
+                                                        className="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                                                    >
                                                         <span className="text-slate-700">{item.label}</span>
                                                         <span className="font-semibold text-slate-900">{item.visits}</span>
                                                     </div>

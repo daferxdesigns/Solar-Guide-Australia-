@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AiWriterAccount;
 use App\Models\GuideCategory;
 use App\Models\GuidePost;
 use App\Models\GuidePostVisit;
@@ -108,6 +109,7 @@ class AdminGuideController extends Controller
     {
         return Inertia::render('Admin/Posts/Create', [
             'categories' => $this->categoryOptions(),
+            'aiAccounts' => $this->aiAccountOptions(),
             'post' => $this->emptyPost(),
         ]);
     }
@@ -130,6 +132,7 @@ class AdminGuideController extends Controller
 
         return Inertia::render('Admin/Posts/Edit', [
             'categories' => $this->categoryOptions(),
+            'aiAccounts' => $this->aiAccountOptions(),
             'post' => [
                 'id' => $post->id,
                 'guide_category_id' => $post->guide_category_id,
@@ -425,6 +428,21 @@ class AdminGuideController extends Controller
     private function categoryOptions(): array
     {
         return $this->categoryTreeOptions();
+    }
+
+    private function aiAccountOptions(): array
+    {
+        return AiWriterAccount::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'model'])
+            ->map(fn (AiWriterAccount $account) => [
+                'id' => $account->id,
+                'name' => $account->name,
+                'model' => $account->model,
+            ])
+            ->all();
     }
 
     private function categoryTreeOptions(?int $ignoreId = null): array

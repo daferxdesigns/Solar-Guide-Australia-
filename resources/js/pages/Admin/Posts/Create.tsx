@@ -9,6 +9,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Create(props: {
     categories: Array<{ id: number; name: string; slug: string }>;
+    aiAccounts: Array<{ id: number; name: string; model: string }>;
     post: {
         id: number | null;
         guide_category_id: number | null;
@@ -24,6 +25,13 @@ export default function Create(props: {
         content: string;
         featured_image_url: string | null;
         featured_image_alt: string;
+        header_background_mode: 'color' | 'image' | 'none';
+        header_background_color: string;
+        header_background_image_url: string | null;
+        header_background_image_position: string;
+        header_background_image_size: 'cover' | 'contain' | 'auto' | '100% 100%';
+        header_background_image_repeat: 'no-repeat' | 'repeat' | 'repeat-x' | 'repeat-y';
+        header_overlay_opacity: number;
         published_at: string;
         analytics: {
             total_visits: number;
@@ -42,6 +50,7 @@ export default function Create(props: {
             submitLabel="Create post"
             breadcrumbs={breadcrumbs}
             categories={props.categories}
+            aiAccounts={props.aiAccounts}
             post={props.post}
             submitUrl="/admin/posts"
             method="post"
