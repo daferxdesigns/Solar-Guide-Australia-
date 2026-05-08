@@ -22,6 +22,8 @@ export default function Create(props: {
         seo_description: string;
         seo_keywords: string;
         canonical_url: string;
+        schema_type: string;
+        schema_custom_json: string;
         content: string;
         featured_image_url: string | null;
         featured_image_alt: string;

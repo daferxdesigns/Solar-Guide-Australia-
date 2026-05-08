@@ -69,26 +69,7 @@ class SeoMetaBuilder
         $canonicalUrl = $post->canonical_url ?: route('guides.show', ['post' => $post->slug]);
         $imageUrl = $this->absoluteUrl($post->featured_image_url ?: $settings->default_og_image_url);
 
-        $articleSchema = [
-            '@context' => 'https://schema.org',
-            '@type' => 'Article',
-            'headline' => $post->title,
-            'description' => $this->cleanDescription($description),
-            'mainEntityOfPage' => $this->absoluteUrl($canonicalUrl),
-            'datePublished' => $post->published_at?->toIso8601String(),
-            'dateModified' => $post->updated_at?->toIso8601String(),
-            'author' => [
-                '@type' => 'Person',
-                'name' => $post->user?->name ?: $this->siteName($settings),
-            ],
-            'publisher' => [
-                '@id' => url('/#organization'),
-            ],
-        ];
-
-        if ($imageUrl) {
-            $articleSchema['image'] = [$imageUrl];
-        }
+        $primarySchema = $this->postPrimarySchema($post, $settings, $description, $canonicalUrl, $imageUrl);
 
         $breadcrumbs = [
             ['name' => 'Home', 'url' => route('home')],
@@ -115,10 +96,85 @@ class SeoMetaBuilder
             'modified_time' => $post->updated_at?->toIso8601String(),
             'schema' => [
                 $this->organizationSchema($settings),
-                $articleSchema,
+                $primarySchema,
                 $this->breadcrumbSchema($breadcrumbs),
             ],
         ]);
+    }
+
+    private function postPrimarySchema(GuidePost $post, SiteSetting $settings, ?string $description, string $canonicalUrl, ?string $imageUrl): array
+    {
+        $schemaType = $this->postSchemaType($post->schema_type ?? null);
+        $cleanDescription = $this->cleanDescription($description);
+        $schema = [
+            '@context' => 'https://schema.org',
+            '@type' => $schemaType,
+            'name' => $this->cleanText($post->title),
+            'description' => $cleanDescription,
+            'url' => $this->absoluteUrl($canonicalUrl),
+            'inLanguage' => 'en-AU',
+        ];
+
+        if (in_array($schemaType, ['Article', 'BlogPosting', 'NewsArticle', 'TechArticle'], true)) {
+            $schema = array_merge($schema, [
+                'headline' => $this->cleanText($post->title),
+                'mainEntityOfPage' => $this->absoluteUrl($canonicalUrl),
+                'datePublished' => $post->published_at?->toIso8601String(),
+                'dateModified' => $post->updated_at?->toIso8601String(),
+                'author' => [
+                    '@type' => 'Person',
+                    'name' => $post->user?->name ?: $this->siteName($settings),
+                ],
+                'publisher' => [
+                    '@id' => url('/#organization'),
+                ],
+            ]);
+        }
+
+        if ($schemaType === 'HowTo') {
+            $schema = array_merge($schema, [
+                'mainEntityOfPage' => $this->absoluteUrl($canonicalUrl),
+                'datePublished' => $post->published_at?->toIso8601String(),
+                'dateModified' => $post->updated_at?->toIso8601String(),
+                'author' => [
+                    '@type' => 'Person',
+                    'name' => $post->user?->name ?: $this->siteName($settings),
+                ],
+                'publisher' => [
+                    '@id' => url('/#organization'),
+                ],
+            ]);
+        }
+
+        if ($schemaType === 'FAQPage') {
+            $schema['mainEntityOfPage'] = $this->absoluteUrl($canonicalUrl);
+        }
+
+        if ($schemaType === 'WebPage') {
+            $schema['isPartOf'] = [
+                '@id' => url('/#website'),
+            ];
+            $schema['dateModified'] = $post->updated_at?->toIso8601String();
+        }
+
+        if ($imageUrl) {
+            $schema['image'] = [$imageUrl];
+        }
+
+        if (is_array($post->schema_custom_json) && $post->schema_custom_json !== []) {
+            $schema = array_replace_recursive($schema, $post->schema_custom_json);
+            $schema['@context'] = 'https://schema.org';
+            $schema['@type'] = $schemaType;
+        }
+
+        return array_filter($schema, fn ($value) => $value !== null && $value !== '');
+    }
+
+    private function postSchemaType(?string $schemaType): string
+    {
+        return in_array($schemaType, ['Article', 'BlogPosting', 'NewsArticle', 'TechArticle', 'HowTo', 'FAQPage', 'WebPage'], true)
+            ? $schemaType
+            : 'Article';
     }
 
     public function page(SitePage $page, SiteSetting $settings, bool $isHomepage = false): array

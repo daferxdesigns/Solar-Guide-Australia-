@@ -17,6 +17,16 @@ use Inertia\Response;
 
 class AdminGuideController extends Controller
 {
+    private const SCHEMA_TYPES = [
+        'Article',
+        'BlogPosting',
+        'NewsArticle',
+        'TechArticle',
+        'HowTo',
+        'FAQPage',
+        'WebPage',
+    ];
+
     public function index(Request $request): Response
     {
         $search = trim((string) $request->query('search', ''));
@@ -145,6 +155,8 @@ class AdminGuideController extends Controller
                 'seo_description' => $post->seo_description,
                 'seo_keywords' => $post->seo_keywords,
                 'canonical_url' => $post->canonical_url,
+                'schema_type' => $post->schema_type ?: 'Article',
+                'schema_custom_json' => $this->schemaJsonForForm($post->schema_custom_json),
                 'content' => $post->content,
                 'featured_image_url' => $post->featured_image_url,
                 'featured_image_alt' => $post->featured_image_alt,
@@ -282,6 +294,8 @@ class AdminGuideController extends Controller
             'seo_description' => ['nullable', 'string', 'max:1000'],
             'seo_keywords' => ['nullable', 'string', 'max:1000'],
             'canonical_url' => ['nullable', 'url', 'max:255'],
+            'schema_type' => ['nullable', 'in:'.implode(',', self::SCHEMA_TYPES)],
+            'schema_custom_json' => ['nullable', 'json', 'max:10000'],
             'content' => ['nullable', 'string'],
             'featured_image_alt' => ['nullable', 'string', 'max:255'],
             'featured_image' => ['nullable', 'image', 'max:6144'],
@@ -314,6 +328,8 @@ class AdminGuideController extends Controller
         $post->seo_description = $this->nullableString($validated['seo_description'] ?? null);
         $post->seo_keywords = $this->nullableString($validated['seo_keywords'] ?? null);
         $post->canonical_url = $this->nullableString($validated['canonical_url'] ?? null);
+        $post->schema_type = $validated['schema_type'] ?? 'Article';
+        $post->schema_custom_json = $this->schemaJsonFromForm($validated['schema_custom_json'] ?? null);
         $post->content = $validated['content'] ?? '';
         $post->featured_image_alt = $this->nullableString($validated['featured_image_alt'] ?? null);
         $post->header_background_mode = $validated['header_background_mode'] ?? 'color';
@@ -368,6 +384,8 @@ class AdminGuideController extends Controller
             'seo_description' => '',
             'seo_keywords' => '',
             'canonical_url' => '',
+            'schema_type' => 'Article',
+            'schema_custom_json' => '',
             'content' => '',
             'featured_image_url' => null,
             'featured_image_alt' => '',
@@ -520,5 +538,27 @@ class AdminGuideController extends Controller
         $value = trim((string) $value);
 
         return $value !== '' ? $value : null;
+    }
+
+    private function schemaJsonForForm(mixed $value): string
+    {
+        if (! is_array($value) || $value === []) {
+            return '';
+        }
+
+        return json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: '';
+    }
+
+    private function schemaJsonFromForm(?string $value): ?array
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        $decoded = json_decode($value, true);
+
+        return is_array($decoded) ? $decoded : null;
     }
 }

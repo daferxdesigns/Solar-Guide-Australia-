@@ -36,6 +36,8 @@ class GuidePost extends Model
         'seo_description',
         'seo_keywords',
         'canonical_url',
+        'schema_type',
+        'schema_custom_json',
         'content',
         'published_at',
     ];
@@ -48,6 +50,7 @@ class GuidePost extends Model
             'is_featured' => 'boolean',
             'published_at' => 'datetime',
             'header_overlay_opacity' => 'integer',
+            'schema_custom_json' => 'array',
         ];
     }
 

@@ -29,6 +29,8 @@ interface PostPayload {
     seo_description: string;
     seo_keywords: string;
     canonical_url: string;
+    schema_type: string;
+    schema_custom_json: string;
     content: string;
     featured_image_url: string | null;
     featured_image_alt: string;
@@ -78,6 +80,44 @@ type AnalyticsGroup = {
     items: Array<{ label: string; visits: number }>;
 };
 
+const schemaTypes = [
+    {
+        value: 'Article',
+        label: 'Article',
+        description: 'Default for evergreen guides and general solar support articles.',
+    },
+    {
+        value: 'BlogPosting',
+        label: 'BlogPosting',
+        description: 'Best for blog-style updates, opinions, and lighter editorial posts.',
+    },
+    {
+        value: 'NewsArticle',
+        label: 'NewsArticle',
+        description: 'Use for timely solar policy, rebate, tariff, or industry news.',
+    },
+    {
+        value: 'TechArticle',
+        label: 'TechArticle',
+        description: 'Use for technical inverter, Wi-Fi, monitoring, and troubleshooting content.',
+    },
+    {
+        value: 'HowTo',
+        label: 'HowTo',
+        description: 'Use for step-by-step setup or repair workflows.',
+    },
+    {
+        value: 'FAQPage',
+        label: 'FAQPage',
+        description: 'Use when the article is mainly questions and answers.',
+    },
+    {
+        value: 'WebPage',
+        label: 'WebPage',
+        description: 'Use for a simple reference page that is not really an article.',
+    },
+];
+
 export default function PostForm({ pageTitle, heroTitle, submitLabel, breadcrumbs, categories, aiAccounts, post, submitUrl, method }: Props) {
     const analyticsGroups: AnalyticsGroup[] = [
         { label: 'Devices', items: post.analytics.device_types },
@@ -97,6 +137,8 @@ export default function PostForm({ pageTitle, heroTitle, submitLabel, breadcrumb
         seo_description: post.seo_description ?? '',
         seo_keywords: post.seo_keywords ?? '',
         canonical_url: post.canonical_url ?? '',
+        schema_type: post.schema_type ?? 'Article',
+        schema_custom_json: post.schema_custom_json ?? '',
         content: post.content ?? '',
         featured_image_alt: post.featured_image_alt ?? '',
         header_background_mode: post.header_background_mode ?? 'color',
@@ -135,6 +177,8 @@ export default function PostForm({ pageTitle, heroTitle, submitLabel, breadcrumb
             .filter(Boolean).length;
         return Math.max(1, Math.ceil(words / 220));
     }, [form.content]);
+
+    const selectedSchema = useMemo(() => schemaTypes.find((type) => type.value === form.schema_type) ?? schemaTypes[0], [form.schema_type]);
 
     const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const target = event.target;
@@ -851,6 +895,37 @@ export default function PostForm({ pageTitle, heroTitle, submitLabel, breadcrumb
                                         className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
                                         placeholder="https://solar-guide-site.test/guides/example-article"
                                     />
+                                </div>
+                                <div className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50/70 p-4">
+                                    <label className="mb-2 block text-sm font-semibold text-slate-800">Schema type</label>
+                                    <select
+                                        name="schema_type"
+                                        value={form.schema_type}
+                                        onChange={handleChange}
+                                        className="w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm transition outline-none focus:border-emerald-500"
+                                    >
+                                        {schemaTypes.map((schema) => (
+                                            <option key={schema.value} value={schema.value}>
+                                                {schema.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <p className="mt-3 text-xs leading-5 text-emerald-900">{selectedSchema.description}</p>
+                                </div>
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-slate-800">Advanced schema JSON-LD fields</label>
+                                    <textarea
+                                        name="schema_custom_json"
+                                        value={form.schema_custom_json}
+                                        onChange={handleChange}
+                                        rows={6}
+                                        className="w-full rounded-2xl border border-slate-300 px-4 py-3 font-mono text-xs transition outline-none focus:border-emerald-500"
+                                        placeholder={'{\n  "mainEntity": [],\n  "about": "Solar inverter troubleshooting"\n}'}
+                                    />
+                                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                                        Optional JSON object merged into the generated schema. Use it for FAQ questions, HowTo steps, tools, supplies,
+                                        or specific technical details.
+                                    </p>
                                 </div>
                             </div>
                         </section>
